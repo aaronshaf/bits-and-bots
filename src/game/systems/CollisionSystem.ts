@@ -1,69 +1,68 @@
-import { GameState } from './GameState';
+import { Bot } from '../Bot';
+import { Bit } from '../Bit';
+import { Byte } from '../Byte';
+import { Bug } from '../Bug';
+import { Projectile } from '../Projectile';
+import { Boss } from '../Boss';
+import { Level } from '../Level';
 import { AudioManager } from '../AudioManager';
+import { ParticleSystem } from '../ParticleSystem';
+import { COLORS } from '../constants';
 
 export class CollisionSystem {
-    private gameState: GameState;
-    private audioManager: AudioManager;
-    private onBotDeath: (bot: any) => void;
-    private onBossDefeat: () => void;
-    private onCreateEffect: (type: string, x: number, y: number, level?: number) => void;
-    private onCheckPowerUp: (bot: any) => void;
-
     constructor(
-        gameState: GameState, 
-        audioManager: AudioManager,
-        callbacks: {
-            onBotDeath: (bot: any) => void,
-            onBossDefeat: () => void,
-            onCreateEffect: (type: string, x: number, y: number, level?: number) => void,
-            onCheckPowerUp: (bot: any) => void
-        }
-    ) {
-        this.gameState = gameState;
-        this.audioManager = audioManager;
-        this.onBotDeath = callbacks.onBotDeath;
-        this.onBossDefeat = callbacks.onBossDefeat;
-        this.onCreateEffect = callbacks.onCreateEffect;
-        this.onCheckPowerUp = callbacks.onCheckPowerUp;
-    }
+        private audioManager: AudioManager,
+        private particleSystem: ParticleSystem,
+        private onBotDeath: (bot: Bot) => void,
+        private onBossDefeat: () => void,
+        private onCheckPowerUp: (bot: Bot) => void
+    ) {}
 
-    public checkAllCollisions(canvasWidth: number, canvasHeight: number): void {
+    public checkCollisions(
+        bots: Bot[],
+        bits: Bit[],
+        bytes: Byte[],
+        bugs: Bug[],
+        projectiles: Projectile[],
+        boss: Boss | null,
+        currentLevel: Level,
+        canvasWidth: number,
+        canvasHeight: number
+    ): void {
         // Check bot-collectible collisions
-        this.gameState.bots.forEach(bot => {
+        bots.forEach(bot => {
             // Bot-bit collisions
-            this.gameState.bits = this.gameState.bits.filter(bit => {
-                if (bot.collidesWith(bit)) {
-                    bot.addScore(bit.getValue());
-                    this.gameState.currentLevel.addBit();
+            for (let i = bits.length - 1; i >= 0; i--) {
+                if (bot.collidesWith(bits[i])) {
+                    bot.addScore(bits[i].getValue());
+                    currentLevel.addBit();
                     bot.heal(2);
                     this.onCheckPowerUp(bot);
                     this.audioManager.playCollectSound(false);
-                    return false;
+                    bits.splice(i, 1);
                 }
-                return true;
-            });
+            }
 
             // Bot-byte collisions
-            this.gameState.bytes = this.gameState.bytes.filter(byte => {
-                if (bot.collidesWith(byte)) {
-                    bot.addScore(byte.getValue());
+            for (let i = bytes.length - 1; i >= 0; i--) {
+                if (bot.collidesWith(bytes[i])) {
+                    bot.addScore(bytes[i].getValue());
                     bot.heal(20);
                     bot.addLifeProgress(0.25);
                     this.audioManager.playCollectSound(true);
-                    return false;
+                    bytes.splice(i, 1);
                 }
-                return true;
-            });
+            }
 
             // Bot-bug collisions
-            this.gameState.bugs.forEach(bug => {
+            bugs.forEach(bug => {
                 if (bot.collidesWith(bug)) {
                     const damage = bug.getDamage();
                     if (bot.takeDamage(damage)) {
                         this.onBotDeath(bot);
                     } else if (!bot.hasShield()) {
                         this.audioManager.playHitSound();
-                        this.onCreateEffect('playerHit', bot.x, bot.y);
+                        this.particleSystem.createPlayerHitEffect(bot.x, bot.y);
                         // Push bot away
                         const dx = bot.x - bug.x;
                         const dy = bot.y - bug.y;
@@ -78,16 +77,16 @@ export class CollisionSystem {
             });
             
             // Bot-boss collision
-            if (this.gameState.boss && bot.collidesWith(this.gameState.boss)) {
+            if (boss && bot.collidesWith(boss)) {
                 const damage = 20;
                 if (bot.takeDamage(damage)) {
                     this.onBotDeath(bot);
                 } else if (!bot.hasShield()) {
                     this.audioManager.playHitSound();
-                    this.onCreateEffect('playerHit', bot.x, bot.y);
+                    this.particleSystem.createPlayerHitEffect(bot.x, bot.y);
                     // Push bot away from boss
-                    const dx = bot.x - this.gameState.boss.x;
-                    const dy = bot.y - this.gameState.boss.y;
+                    const dx = bot.x - boss.x;
+                    const dy = bot.y - boss.y;
                     const distance = Math.sqrt(dx * dx + dy * dy);
                     if (distance > 0) {
                         bot.x += (dx / distance) * 50;
@@ -99,67 +98,67 @@ export class CollisionSystem {
         });
 
         // Check projectile-bug collisions
-        this.gameState.projectiles = this.gameState.projectiles.filter(projectile => {
+        for (let i = projectiles.length - 1; i >= 0; i--) {
+            const projectile = projectiles[i];
             let projectileHit = false;
             
-            this.gameState.bugs = this.gameState.bugs.filter(bug => {
-                if (!projectileHit && projectile.collidesWith(bug)) {
+            for (let j = bugs.length - 1; j >= 0; j--) {
+                const bug = bugs[j];
+                if (projectile.collidesWith(bug)) {
                     projectileHit = true;
                     
                     if (bug.takeDamage()) {
                         // Bug died
-                        const shooter = this.gameState.bots[projectile.ownerId];
+                        const shooter = bots[projectile.ownerId];
                         if (shooter) {
                             const points = 3 + bug.getGrowthLevel() * 2;
                             shooter.addScore(points);
                         }
                         this.audioManager.playBugDestroySound();
-                        this.onCreateEffect('bugDeath', bug.x, bug.y, bug.getGrowthLevel());
-                        return false;
+                        this.particleSystem.createBugDeathEffect(bug.x, bug.y, bug.getGrowthLevel(), COLORS.bug);
+                        bugs.splice(j, 1);
                     } else {
                         this.audioManager.playHitSound();
-                        return true;
                     }
+                    break;
                 }
-                return true;
-            });
+            }
             
-            return !projectileHit;
-        });
+            if (projectileHit) {
+                projectiles.splice(i, 1);
+            }
+        }
         
         // Check projectile-boss collisions
-        if (this.gameState.boss) {
-            this.gameState.projectiles = this.gameState.projectiles.filter(projectile => {
-                if (this.gameState.boss && projectile.collidesWith(this.gameState.boss)) {
-                    if (this.gameState.boss.takeDamage()) {
+        if (boss) {
+            for (let i = projectiles.length - 1; i >= 0; i--) {
+                const projectile = projectiles[i];
+                if (projectile.collidesWith(boss)) {
+                    if (boss.takeDamage()) {
                         this.onBossDefeat();
-                        this.gameState.boss = null;
                     } else {
                         this.audioManager.playHitSound();
                     }
-                    return false;
+                    projectiles.splice(i, 1);
                 }
-                return true;
-            });
+            }
         }
         
         // Let bugs collect bits and bytes
-        this.gameState.bugs.forEach(bug => {
-            this.gameState.bits = this.gameState.bits.filter(bit => {
-                if (bug.collidesWith(bit)) {
+        bugs.forEach(bug => {
+            for (let i = bits.length - 1; i >= 0; i--) {
+                if (bug.collidesWith(bits[i])) {
                     bug.collect();
-                    return false;
+                    bits.splice(i, 1);
                 }
-                return true;
-            });
+            }
             
-            this.gameState.bytes = this.gameState.bytes.filter(byte => {
-                if (bug.collidesWith(byte)) {
+            for (let i = bytes.length - 1; i >= 0; i--) {
+                if (bug.collidesWith(bytes[i])) {
                     bug.collect();
-                    return false;
+                    bytes.splice(i, 1);
                 }
-                return true;
-            });
+            }
         });
     }
 }

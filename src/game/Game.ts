@@ -56,9 +56,9 @@ export class Game {
         this.collisionSystem = new CollisionSystem(
             this.audioManager,
             this.particleSystem,
-            () => this.handleBotDeath.bind(this),
-            () => this.handleBossDefeat.bind(this),
-            () => this.checkPowerUpUnlock.bind(this)
+            (bot: Bot) => this.handleBotDeath(bot),
+            () => this.handleBossDefeat(),
+            (bot: Bot) => this.checkPowerUpUnlock(bot)
         );
         
         this.resizeCanvas();
