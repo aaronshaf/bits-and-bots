@@ -18,32 +18,125 @@ body {
     background-color: #1a1a1a;
 }
 
-.score-display {
+.menu {
     position: absolute;
-    top: 20px;
-    background-color: rgba(0, 0, 0, 0.7);
-    padding: 10px 20px;
-    border-radius: 5px;
-    font-size: 24px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.9);
+    padding: 40px;
+    border-radius: 10px;
+    text-align: center;
+    color: #fff;
+    z-index: 100;
 }
 
-.score-display.player1 {
+.menu h1 {
+    font-size: 48px;
+    margin-bottom: 20px;
+    color: #00ff88;
+}
+
+.menu-button {
+    background-color: #00ff88;
+    color: #000;
+    border: none;
+    padding: 15px 40px;
+    font-size: 24px;
+    font-weight: bold;
+    border-radius: 5px;
+    cursor: pointer;
+    margin: 20px 0;
+    transition: all 0.3s;
+}
+
+.menu-button:hover {
+    background-color: #00dd77;
+    transform: scale(1.05);
+}
+
+.controls {
+    margin-top: 30px;
+    text-align: left;
+}
+
+.controls h3 {
+    color: #00ff88;
+    margin-bottom: 10px;
+}
+
+.controls p {
+    margin: 5px 0;
+    opacity: 0.8;
+}
+
+.player-ui {
+    position: absolute;
+    top: 20px;
+    background-color: rgba(0, 0, 0, 0.8);
+    padding: 15px 20px;
+    border-radius: 5px;
+    font-size: 16px;
+    min-width: 200px;
+}
+
+.player-ui.player1 {
     left: 20px;
 }
 
-.score-display.player2 {
+.player-ui.player2 {
     right: 20px;
 }
 
 .player-label {
     font-weight: bold;
-    opacity: 0.7;
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+
+.player1 .player-label {
+    color: #00ff88;
+}
+
+.player2 .player-label {
+    color: #ff6b6b;
 }
 
 .score {
+    margin-bottom: 10px;
+}
+
+.health-bar {
+    width: 100%;
+    height: 20px;
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    position: relative;
+    margin-bottom: 10px;
+    overflow: hidden;
+}
+
+.health-fill {
+    height: 100%;
+    background-color: #00ff88;
+    transition: width 0.3s ease;
+}
+
+.health-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     font-weight: bold;
-    color: #00ff88;
+    font-size: 12px;
+    color: #000;
+}
+
+.lives {
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.hidden {
+    display: none;
 }

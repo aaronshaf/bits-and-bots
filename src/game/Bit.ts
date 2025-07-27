@@ -2,50 +2,53 @@ import { Entity } from './Entity';
 import { COLORS, SIZES } from './constants';
 
 export class Bit extends Entity {
-    private pulseTime: number = 0;
-    private sparkleTime: number = 0;
     private bitValue: string;
+    private fallSpeed: number;
+    private opacity: number;
     
     constructor(x: number, y: number) {
         super(x, y, SIZES.bit, COLORS.bit);
-        this.sparkleTime = Math.random() * Math.PI * 2;
         this.bitValue = Math.random() > 0.5 ? '1' : '0';
+        this.fallSpeed = 50 + Math.random() * 30; // Variable fall speeds
+        this.opacity = 0.3 + Math.random() * 0.7; // Varying opacity for depth
+        this.y = -10; // Start above screen
     }
 
     public update(deltaTime: number): void {
-        // Add a gentle floating animation
-        this.pulseTime += deltaTime / 1000;
-        this.sparkleTime += deltaTime / 500;
-        const pulseScale = 1 + Math.sin(this.pulseTime * 3) * 0.1;
-        this.radius = SIZES.bit * pulseScale;
+        // Fall down like Matrix rain
+        this.y += this.fallSpeed * (deltaTime / 1000);
+        
+        // Fade as it falls
+        if (this.y > window.innerHeight * 0.7) {
+            this.opacity *= 0.99;
+        }
+    }
+    
+    public isOffScreen(): boolean {
+        return this.y > window.innerHeight + 20 || this.opacity < 0.1;
     }
 
     public render(ctx: CanvasRenderingContext2D): void {
         ctx.save();
-        ctx.translate(this.x, this.y);
+        ctx.globalAlpha = this.opacity;
         
-        // Subtle glow
-        const glowSize = 12;
-        const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, glowSize);
-        gradient.addColorStop(0, this.color + '44');
-        gradient.addColorStop(0.5, this.color + '22');
-        gradient.addColorStop(1, this.color + '00');
+        // Matrix-style glow trail
+        const gradient = ctx.createLinearGradient(this.x, this.y - 20, this.x, this.y + 5);
+        gradient.addColorStop(0, this.color + '00');
+        gradient.addColorStop(0.7, this.color + '44');
+        gradient.addColorStop(1, this.color + 'ff');
+        
         ctx.fillStyle = gradient;
-        ctx.beginPath();
-        ctx.arc(0, 0, glowSize, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.fillRect(this.x - 6, this.y - 20, 12, 25);
         
-        // Draw the bit value (1 or 0)
-        ctx.font = `bold 14px monospace`;
+        // Draw the bit value
+        ctx.font = `bold 12px monospace`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = this.color;
-        ctx.fillText(this.bitValue, 0, 0);
-        
-        // Add a subtle outline for better visibility
-        ctx.strokeStyle = this.color + '66';
-        ctx.lineWidth = 1;
-        ctx.strokeText(this.bitValue, 0, 0);
+        ctx.shadowColor = this.color;
+        ctx.shadowBlur = 8;
+        ctx.fillText(this.bitValue, this.x, this.y);
         
         ctx.restore();
     }

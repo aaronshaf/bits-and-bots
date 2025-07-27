@@ -8,13 +8,37 @@
 </head>
 <body>
     <canvas id="gameCanvas"></canvas>
-    <div id="player1-score" class="score-display player1">
-        <span class="player-label">P1</span>
-        <span class="score">0</span>
+    <div id="game-menu" class="menu">
+        <h1>Bits and Bots</h1>
+        <p>Connect your gamepads to play!</p>
+        <button id="start-button" class="menu-button">Start Game</button>
+        <div class="controls">
+            <h3>Controls:</h3>
+            <p>Left Stick - Move</p>
+            <p>Right Stick - Aim</p>
+            <p>A Button - Shoot</p>
+            <p>B Button - Shield</p>
+        </div>
     </div>
-    <div id="player2-score" class="score-display player2">
-        <span class="player-label">P2</span>
-        <span class="score">0</span>
+    
+    <div id="player1-ui" class="player-ui player1">
+        <div class="player-label">P1</div>
+        <div class="score">Score: <span class="score-value">0</span></div>
+        <div class="health-bar">
+            <div class="health-fill" style="width: 100%"></div>
+            <span class="health-text">100%</span>
+        </div>
+        <div class="lives">Lives: <span class="lives-value">3</span></div>
+    </div>
+    
+    <div id="player2-ui" class="player-ui player2">
+        <div class="player-label">P2</div>
+        <div class="score">Score: <span class="score-value">0</span></div>
+        <div class="health-bar">
+            <div class="health-fill" style="width: 100%"></div>
+            <span class="health-text">100%</span>
+        </div>
+        <div class="lives">Lives: <span class="lives-value">3</span></div>
     </div>
     <script src="main.js"></script>
 </body>

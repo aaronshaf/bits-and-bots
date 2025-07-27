@@ -5,10 +5,15 @@ export class Bug extends Entity {
     private vx: number;
     private vy: number;
     private targetChangeTimer: number = 0;
-    private targetChangeInterval: number = 2000; // Change direction every 2 seconds
+    private targetChangeInterval: number = 500; // More responsive targeting
+    private collectedCount: number = 0;
+    private growthLevel: number = 0;
+    private baseRadius: number;
+    private targetEntity: Entity | null = null;
     
     constructor(x: number, y: number) {
         super(x, y, SIZES.bug, COLORS.bug);
+        this.baseRadius = SIZES.bug;
         this.setRandomVelocity();
     }
     
@@ -23,26 +28,82 @@ export class Bug extends Entity {
         this.vy = Math.sin(angle);
     }
 
+    public setTarget(bits: Entity[], bytes: Entity[], bots: Entity[]): void {
+        // Find nearest target (prioritize bytes > bits > bots)
+        let nearestTarget: Entity | null = null;
+        let nearestDistance = Infinity;
+
+        // Check bytes first (most valuable)
+        [...bytes, ...bits, ...bots].forEach(entity => {
+            const dx = entity.x - this.x;
+            const dy = entity.y - this.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance < nearestDistance) {
+                nearestDistance = distance;
+                nearestTarget = entity;
+            }
+        });
+
+        this.targetEntity = nearestTarget;
+    }
+
     public update(deltaTime: number): void {
+        // Update velocity based on target
+        if (this.targetEntity) {
+            const dx = this.targetEntity.x - this.x;
+            const dy = this.targetEntity.y - this.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance > 0) {
+                // Move towards target with increased speed based on growth
+                const speedMultiplier = 1 + (this.growthLevel * 0.3);
+                this.vx = (dx / distance) * speedMultiplier;
+                this.vy = (dy / distance) * speedMultiplier;
+            }
+        } else {
+            // Random movement if no target
+            this.targetChangeTimer += deltaTime;
+            if (this.targetChangeTimer >= this.targetChangeInterval) {
+                this.setRandomVelocity();
+                this.targetChangeTimer = 0;
+            }
+        }
+
         // Update position
         const speed = SPEEDS.bug * (deltaTime / 1000);
         this.x += this.vx * speed;
         this.y += this.vy * speed;
+    }
 
-        // Change direction periodically
-        this.targetChangeTimer += deltaTime;
-        if (this.targetChangeTimer >= this.targetChangeInterval) {
-            this.setRandomVelocity();
-            this.targetChangeTimer = 0;
+    public collect(): void {
+        this.collectedCount++;
+        
+        // Grow every 3 collections
+        if (this.collectedCount % 3 === 0) {
+            this.growthLevel++;
+            this.radius = this.baseRadius * (1 + this.growthLevel * 0.2);
         }
+    }
+
+    public getGrowthLevel(): number {
+        return this.growthLevel;
+    }
+
+    public getDamage(): number {
+        return 5 + (this.growthLevel * 2); // More damage as bug grows
     }
 
     public render(ctx: CanvasRenderingContext2D): void {
         ctx.save();
         ctx.translate(this.x, this.y);
         
-        // Wiggle effect
-        const wiggle = Math.sin(Date.now() / 100) * 2;
+        // Scale based on growth
+        const scale = 1 + (this.growthLevel * 0.2);
+        ctx.scale(scale, scale);
+        
+        // More aggressive wiggle for bigger bugs
+        const wiggle = Math.sin(Date.now() / (100 - this.growthLevel * 10)) * (2 + this.growthLevel);
         ctx.rotate(wiggle * 0.05);
         
         // Draw legs (6 legs for a proper bug)
@@ -95,10 +156,11 @@ export class Bug extends Entity {
         ctx.arc(0, 0, this.radius * 0.5, 0, Math.PI * 2);
         ctx.stroke();
         
-        // Evil eyes
+        // Evil eyes - get redder with growth
         ctx.globalAlpha = 1;
-        ctx.fillStyle = '#ff0000';
-        const eyeSize = 3;
+        const eyeRedness = Math.min(255, 200 + this.growthLevel * 20);
+        ctx.fillStyle = `rgb(${eyeRedness}, 0, 0)`;
+        const eyeSize = 3 + this.growthLevel * 0.5;
         ctx.beginPath();
         ctx.arc(-this.radius * 0.3, -this.radius * 0.5, eyeSize, 0, Math.PI * 2);
         ctx.fill();
@@ -106,14 +168,16 @@ export class Bug extends Entity {
         ctx.arc(this.radius * 0.3, -this.radius * 0.5, eyeSize, 0, Math.PI * 2);
         ctx.fill();
         
-        // Eye glow
+        // Eye glow - more intense with growth
         ctx.fillStyle = '#ffaaaa';
+        ctx.globalAlpha = 0.6 + this.growthLevel * 0.1;
         ctx.beginPath();
         ctx.arc(-this.radius * 0.3, -this.radius * 0.5, eyeSize/2, 0, Math.PI * 2);
         ctx.fill();
         ctx.beginPath();
         ctx.arc(this.radius * 0.3, -this.radius * 0.5, eyeSize/2, 0, Math.PI * 2);
         ctx.fill();
+        ctx.globalAlpha = 1;
         
         // Antennae
         ctx.strokeStyle = this.color;

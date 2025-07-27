@@ -3,8 +3,8 @@ export const COLORS = {
     grid: '#333',
     player1: '#00ff88',
     player2: '#ff6b6b',
-    bit: '#ffd93d',
-    byte: '#6bcf7f',
+    bit: '#00ff00',  // Matrix green
+    byte: '#00ff00', // Matrix green
     bug: '#ff4757',
     powerUp: '#a29bfe',
 } as const;

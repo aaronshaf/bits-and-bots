@@ -2,87 +2,77 @@ import { Entity } from './Entity';
 import { COLORS, SIZES } from './constants';
 
 export class Byte extends Entity {
-    private rotationAngle: number = 0;
-    private floatOffset: number = 0;
     private bitPattern: string[];
+    private formationTime: number = 0;
     
     constructor(x: number, y: number) {
         super(x, y, SIZES.byte, COLORS.byte);
-        this.floatOffset = Math.random() * Math.PI * 2;
         // Generate random 8-bit pattern
         this.bitPattern = Array(8).fill(0).map(() => Math.random() > 0.5 ? '1' : '0');
     }
 
     public update(deltaTime: number): void {
-        // Rotate the byte
-        this.rotationAngle += (deltaTime / 1000) * Math.PI;
-        this.floatOffset += deltaTime / 1000;
+        // Gentle pulsing animation
+        this.formationTime += deltaTime / 1000;
     }
 
     public render(ctx: CanvasRenderingContext2D): void {
         ctx.save();
-        const floatY = Math.sin(this.floatOffset * 2) * 2;
-        ctx.translate(this.x, this.y + floatY);
-        ctx.rotate(this.rotationAngle);
+        ctx.translate(this.x, this.y);
         
-        // Outer glow
-        const glowSize = this.radius * 2;
-        const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, glowSize);
-        gradient.addColorStop(0, this.color + '66');
-        gradient.addColorStop(0.5, this.color + '33');
-        gradient.addColorStop(1, this.color + '00');
-        ctx.fillStyle = gradient;
-        ctx.beginPath();
-        ctx.arc(0, 0, glowSize, 0, Math.PI * 2);
-        ctx.fill();
+        // Pulsing scale
+        const pulse = 1 + Math.sin(this.formationTime * 3) * 0.05;
+        ctx.scale(pulse, pulse);
         
-        // Background container with rounded corners
-        const containerSize = this.radius * 1.4;
-        const cornerRadius = 3;
-        
-        ctx.fillStyle = this.color + '44';
+        // Container glow
+        ctx.shadowColor = this.color;
+        ctx.shadowBlur = 15;
+        ctx.fillStyle = this.color + '22';
         ctx.strokeStyle = this.color;
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = 2;
         
+        // Draw byte container - hexagonal shape
+        const size = this.radius * 1.5;
         ctx.beginPath();
-        ctx.moveTo(-containerSize + cornerRadius, -containerSize);
-        ctx.lineTo(containerSize - cornerRadius, -containerSize);
-        ctx.arc(containerSize - cornerRadius, -containerSize + cornerRadius, cornerRadius, -Math.PI/2, 0);
-        ctx.lineTo(containerSize, containerSize - cornerRadius);
-        ctx.arc(containerSize - cornerRadius, containerSize - cornerRadius, cornerRadius, 0, Math.PI/2);
-        ctx.lineTo(-containerSize + cornerRadius, containerSize);
-        ctx.arc(-containerSize + cornerRadius, containerSize - cornerRadius, cornerRadius, Math.PI/2, Math.PI);
-        ctx.lineTo(-containerSize, -containerSize + cornerRadius);
-        ctx.arc(-containerSize + cornerRadius, -containerSize + cornerRadius, cornerRadius, Math.PI, Math.PI * 1.5);
+        for (let i = 0; i < 6; i++) {
+            const angle = (Math.PI / 3) * i;
+            const x = Math.cos(angle) * size;
+            const y = Math.sin(angle) * size;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
         ctx.closePath();
         ctx.fill();
         ctx.stroke();
         
-        // Draw 8 bits in a 2x4 grid
-        ctx.font = 'bold 7px monospace';
+        // Draw 8 bits in a circular pattern
+        ctx.font = 'bold 10px monospace';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillStyle = this.color;
+        ctx.shadowBlur = 5;
         
-        const bitSize = 7;
-        const spacing = 9;
-        const startX = -spacing * 1.5;
-        const startY = -spacing / 2;
-        
+        const bitRadius = size * 0.65;
         for (let i = 0; i < 8; i++) {
-            const row = Math.floor(i / 4);
-            const col = i % 4;
-            const x = startX + col * spacing;
-            const y = startY + row * spacing;
+            const angle = (Math.PI * 2 / 8) * i - Math.PI / 2;
+            const x = Math.cos(angle) * bitRadius;
+            const y = Math.sin(angle) * bitRadius;
             
-            // Bit background
-            ctx.fillStyle = this.color + '22';
-            ctx.fillRect(x - bitSize/2, y - bitSize/2, bitSize, bitSize);
+            // Bit glow background
+            ctx.fillStyle = this.color + '44';
+            ctx.beginPath();
+            ctx.arc(x, y, 8, 0, Math.PI * 2);
+            ctx.fill();
             
             // Bit value
-            ctx.fillStyle = this.bitPattern[i] === '1' ? this.color : this.color + '88';
+            ctx.fillStyle = this.color;
             ctx.fillText(this.bitPattern[i], x, y);
         }
+        
+        // Center indicator showing this is a byte (8 bits)
+        ctx.font = 'bold 8px monospace';
+        ctx.fillStyle = this.color + '88';
+        ctx.shadowBlur = 0;
+        ctx.fillText('8', 0, 0);
         
         ctx.restore();
     }

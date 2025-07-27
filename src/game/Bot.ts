@@ -6,12 +6,17 @@ export class Bot extends Entity {
     private vy: number = 0;
     private playerIndex: number;
     public score: number = 0;
+    public health: number = 100;
+    public maxHealth: number = 100;
+    public lives: number = 3;
     private lastShotTime: number = 0;
     private shotCooldown: number = 100; // 100ms between shots for rapid fire
     private lastDirection: { x: number, y: number } = { x: 1, y: 0 };
     private shieldActive: boolean = false;
     private shieldDuration: number = 2000; // 2 seconds
     private shieldTimer: number = 0;
+    private invulnerableTimer: number = 0;
+    private invulnerableDuration: number = 2000; // 2 seconds after respawn
 
     constructor(x: number, y: number, playerIndex: number) {
         const color = playerIndex === 0 ? COLORS.player1 : COLORS.player2;
@@ -47,6 +52,11 @@ export class Bot extends Entity {
                 this.shieldActive = false;
             }
         }
+        
+        // Update invulnerability
+        if (this.invulnerableTimer > 0) {
+            this.invulnerableTimer -= deltaTime;
+        }
     }
 
     public canShoot(): boolean {
@@ -71,6 +81,11 @@ export class Bot extends Entity {
     }
 
     public render(ctx: CanvasRenderingContext2D): void {
+        // Flicker if invulnerable
+        if (this.invulnerableTimer > 0 && Math.floor(this.invulnerableTimer / 100) % 2 === 0) {
+            ctx.globalAlpha = 0.5;
+        }
+        
         // Draw shield if active
         if (this.shieldActive) {
             ctx.save();
@@ -160,6 +175,31 @@ export class Bot extends Entity {
 
     public addScore(points: number): void {
         this.score = Math.max(0, this.score + points); // Don't go below 0
+    }
+
+    public takeDamage(damage: number): boolean {
+        if (this.invulnerableTimer > 0 || this.shieldActive) {
+            return false; // No damage taken
+        }
+        
+        this.health -= damage;
+        if (this.health <= 0) {
+            this.health = 0;
+            return true; // Bot died
+        }
+        return false;
+    }
+
+    public respawn(x: number, y: number): void {
+        this.x = x;
+        this.y = y;
+        this.health = this.maxHealth;
+        this.invulnerableTimer = this.invulnerableDuration;
+        this.lives--;
+    }
+
+    public isAlive(): boolean {
+        return this.lives > 0;
     }
 
     public getPlayerIndex(): number {
