@@ -1,0 +1,29 @@
+export const COLORS = {
+    background: '#1a1a1a',
+    grid: '#333',
+    player1: '#00ff88',
+    player2: '#ff6b6b',
+    bit: '#ffd93d',
+    byte: '#6bcf7f',
+    bug: '#ff4757',
+    powerUp: '#a29bfe',
+} as const;
+
+export const SIZES = {
+    bot: 20,
+    bit: 3,
+    byte: 12,
+    bug: 12,
+    powerUp: 16,
+} as const;
+
+export const SPEEDS = {
+    bot: 200, // pixels per second
+    bug: 100,
+    projectile: 600, // Increased for more responsive shooting
+} as const;
+
+export const UI = {
+    scoreMargin: 20,
+    fontSize: 24,
+} as const;

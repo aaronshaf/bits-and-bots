@@ -1,0 +1,16 @@
+{
+  "name": "bits-and-bots",
+  "module": "src/main.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "bun run src/dev-server.ts",
+    "build": "bun build src/main.ts --outdir=dist --target=browser && cp src/index.html dist/ && cp -r src/styles dist/",
+    "check:lines": "find src -name '*.ts' -exec wc -l {} + | awk '$1 > 600 && $2 != \"total\" {print $2 \" has more than 600 lines\"; exit 1}'"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "husky": "^9.1.7",
+    "typescript": "^5"
+  }
+}
