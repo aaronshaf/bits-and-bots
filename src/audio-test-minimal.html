@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Minimal Audio Test</title>
+</head>
+<body>
+    <h1>Minimal Web Audio Test</h1>
+    <button id="test1">Test 1: Simple Beep</button>
+    <button id="test2">Test 2: Scheduled Notes</button>
+    <button id="test3">Test 3: Long Tone</button>
+    <p id="status">Click a button to test</p>
+    
+    <script>
+        let audioContext = null;
+        
+        document.getElementById('test1').addEventListener('click', async () => {
+            if (!audioContext) {
+                audioContext = new AudioContext();
+                if (audioContext.state === 'suspended') {
+                    await audioContext.resume();
+                }
+            }
+            
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            
+            osc.frequency.value = 440;
+            gain.gain.value = 0.3;
+            
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+            
+            osc.start();
+            osc.stop(audioContext.currentTime + 0.5);
+            
+            document.getElementById('status').textContent = 'Playing 440Hz for 0.5s';
+        });
+        
+        document.getElementById('test2').addEventListener('click', async () => {
+            if (!audioContext) {
+                audioContext = new AudioContext();
+                if (audioContext.state === 'suspended') {
+                    await audioContext.resume();
+                }
+            }
+            
+            // Schedule multiple notes
+            const notes = [440, 494, 523, 587, 659, 698, 784, 880];
+            const startTime = audioContext.currentTime;
+            
+            notes.forEach((freq, i) => {
+                const osc = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+                
+                osc.frequency.value = freq;
+                gain.gain.value = 0.2;
+                
+                osc.connect(gain);
+                gain.connect(audioContext.destination);
+                
+                const noteStart = startTime + (i * 0.5);
+                osc.start(noteStart);
+                osc.stop(noteStart + 0.4);
+            });
+            
+            document.getElementById('status').textContent = 'Playing 8 notes over 4 seconds';
+        });
+        
+        document.getElementById('test3').addEventListener('click', async () => {
+            if (!audioContext) {
+                audioContext = new AudioContext();
+                if (audioContext.state === 'suspended') {
+                    await audioContext.resume();
+                }
+            }
+            
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            
+            osc.frequency.value = 440;
+            gain.gain.value = 0.1;
+            
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+            
+            osc.start();
+            osc.stop(audioContext.currentTime + 10); // 10 seconds
+            
+            document.getElementById('status').textContent = 'Playing 440Hz for 10 seconds';
+        });
+    </script>
+</body>
+</html>

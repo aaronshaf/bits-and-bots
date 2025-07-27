@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bits and Bots</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%231a1a1a'/%3E%3Ctext x='16' y='16' font-family='monospace' font-size='8' fill='%2300ff8844' text-anchor='middle' dominant-baseline='middle'%3E1 0 1%3C/text%3E%3Ctext x='16' y='20' font-family='monospace' font-size='20' font-weight='bold' fill='%2300ff88' text-anchor='middle' dominant-baseline='middle' style='filter: drop-shadow(0 0 4px %2300ff88)'%3EB%3C/text%3E%3C/svg%3E">
     <link rel="stylesheet" href="styles/main.css">
 </head>
 <body>
@@ -22,8 +23,7 @@
     </div>
     
     <div id="player1-ui" class="player-ui player1">
-        <div class="player-label">P1</div>
-        <div class="score">Score: <span class="score-value">0</span></div>
+        <div class="score"><span class="score-value">0</span></div>
         <div class="health-bar">
             <div class="health-fill" style="width: 100%"></div>
             <span class="health-text">100%</span>
@@ -32,14 +32,41 @@
     </div>
     
     <div id="player2-ui" class="player-ui player2">
-        <div class="player-label">P2</div>
-        <div class="score">Score: <span class="score-value">0</span></div>
+        <div class="score"><span class="score-value">0</span></div>
         <div class="health-bar">
             <div class="health-fill" style="width: 100%"></div>
             <span class="health-text">100%</span>
         </div>
         <div class="lives">Lives: <span class="lives-value">3</span></div>
     </div>
-    <script src="main.js"></script>
+    
+    <div id="level-ui" class="level-ui">
+        <div class="level-label">Level <span class="level-number">1</span></div>
+        <div class="level-progress">
+            <div class="progress-fill"></div>
+            <span class="progress-text">0/124 bits</span>
+        </div>
+    </div>
+    
+    <div id="preferences-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2>Preferences</h2>
+            <div class="preference-item">
+                <label for="music-volume">Music Volume</label>
+                <input type="range" id="music-volume" min="0" max="100" value="80" class="volume-slider">
+                <span class="volume-value">80%</span>
+            </div>
+            <div class="preference-item">
+                <label for="sfx-volume">Sound Effects Volume</label>
+                <input type="range" id="sfx-volume" min="0" max="100" value="40" class="volume-slider">
+                <span class="volume-value">40%</span>
+            </div>
+            <div class="modal-buttons">
+                <button id="close-preferences" class="modal-button">Close</button>
+            </div>
+            <div class="modal-hint">Press ESC or comma to close</div>
+        </div>
+    </div>
+    <script src="main.js?v=3"></script>
 </body>
 </html>

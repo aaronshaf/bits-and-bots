@@ -3,11 +3,30 @@ import { join } from "path";
 
 const port = 3000;
 
+function getContentType(path: string): string {
+  const ext = path.split('.').pop()?.toLowerCase();
+  switch (ext) {
+    case 'html': return 'text/html';
+    case 'css': return 'text/css';
+    case 'js': return 'application/javascript';
+    case 'json': return 'application/json';
+    case 'mid':
+    case 'midi': return 'audio/midi';
+    case 'png': return 'image/png';
+    case 'jpg':
+    case 'jpeg': return 'image/jpeg';
+    case 'svg': return 'image/svg+xml';
+    default: return 'application/octet-stream';
+  }
+}
+
 serve({
   port,
   async fetch(req) {
     const url = new URL(req.url);
     let path = url.pathname;
+    
+    console.log(`Request for: ${path}`);
 
     // Serve index.html for root
     if (path === "/") {
@@ -28,14 +47,53 @@ serve({
       }
     }
 
-    // Serve static files
-    const filePath = join("src", path);
-    const file = Bun.file(filePath);
+    // Special handling for MIDI files
+    if (path.endsWith('.mid') || path.endsWith('.midi')) {
+      // Try multiple locations
+      const locations = [
+        join("dist", path),
+        join("src", path),
+        join(".", path),
+      ];
+      
+      for (const location of locations) {
+        const file = Bun.file(location);
+        if (await file.exists()) {
+          console.log(`Serving MIDI file from: ${location}`);
+          return new Response(file, {
+            headers: { 
+              "Content-Type": "audio/midi",
+              "Access-Control-Allow-Origin": "*"
+            },
+          });
+        }
+      }
+      console.log(`MIDI file not found in any location: ${path}`);
+    }
     
-    if (await file.exists()) {
-      return new Response(file);
+    // Try to serve static files from dist first
+    const distPath = join("dist", path);
+    const distFile = Bun.file(distPath);
+    
+    if (await distFile.exists()) {
+      const contentType = getContentType(path);
+      return new Response(distFile, {
+        headers: { "Content-Type": contentType },
+      });
+    }
+    
+    // Then try src directory
+    const srcPath = join("src", path);
+    const srcFile = Bun.file(srcPath);
+    
+    if (await srcFile.exists()) {
+      const contentType = getContentType(path);
+      return new Response(srcFile, {
+        headers: { "Content-Type": contentType },
+      });
     }
 
+    console.log(`File not found: ${path}`);
     return new Response("Not Found", { status: 404 });
   },
 });

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Audio Test</title>
+</head>
+<body>
+    <h1>Web Audio API Test</h1>
+    <button id="test-btn">Test Audio (440Hz beep)</button>
+    <button id="test-music">Test MIDI</button>
+    <p id="status">Click button to test</p>
+    
+    <script>
+        document.getElementById('test-btn').addEventListener('click', async () => {
+            const status = document.getElementById('status');
+            try {
+                const audioContext = new AudioContext();
+                status.textContent = 'AudioContext created, state: ' + audioContext.state;
+                
+                if (audioContext.state === 'suspended') {
+                    await audioContext.resume();
+                    status.textContent += ' -> resumed';
+                }
+                
+                const osc = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+                
+                osc.frequency.value = 440;
+                gain.gain.value = 0.3;
+                
+                osc.connect(gain);
+                gain.connect(audioContext.destination);
+                
+                osc.start();
+                osc.stop(audioContext.currentTime + 0.5);
+                
+                status.textContent += ' -> Playing 440Hz beep for 0.5s';
+            } catch (error) {
+                status.textContent = 'Error: ' + error.message;
+                console.error(error);
+            }
+        });
+        
+        document.getElementById('test-music').addEventListener('click', async () => {
+            const status = document.getElementById('status');
+            try {
+                const response = await fetch('mozart_sonata.mid');
+                if (response.ok) {
+                    status.textContent = 'MIDI file found and accessible';
+                } else {
+                    status.textContent = 'MIDI file not found: ' + response.status;
+                }
+            } catch (error) {
+                status.textContent = 'Error fetching MIDI: ' + error.message;
+            }
+        });
+    </script>
+</body>
+</html>

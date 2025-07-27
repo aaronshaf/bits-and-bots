@@ -12,9 +12,11 @@ export class Bot extends Entity {
     private lastShotTime: number = 0;
     private shotCooldown: number = 100; // 100ms between shots for rapid fire
     private lastDirection: { x: number, y: number } = { x: 1, y: 0 };
-    private shieldActive: boolean = false;
-    private shieldDuration: number = 2000; // 2 seconds
-    private shieldTimer: number = 0;
+    private shieldActive: boolean = true;
+    private shieldStrength: number = 100; // Shield at 100%
+    private maxShieldStrength: number = 100;
+    private shieldRegenTimer: number = 0;
+    private shieldRegenDelay: number = 3000; // 3 seconds before shield starts regenerating
     private invulnerableTimer: number = 0;
     private invulnerableDuration: number = 2000; // 2 seconds after respawn
     private powerUps: Set<string> = new Set();
@@ -48,10 +50,17 @@ export class Bot extends Entity {
         this.lastShotTime += deltaTime;
         
         // Update shield
-        if (this.shieldActive) {
-            this.shieldTimer -= deltaTime;
-            if (this.shieldTimer <= 0) {
-                this.shieldActive = false;
+        if (this.shieldStrength <= 0) {
+            this.shieldActive = false;
+            this.shieldRegenTimer += deltaTime;
+            
+            // Start regenerating shield after delay
+            if (this.shieldRegenTimer >= this.shieldRegenDelay) {
+                this.shieldStrength = Math.min(this.maxShieldStrength, this.shieldStrength + 20 * (deltaTime / 1000));
+                if (this.shieldStrength >= this.maxShieldStrength) {
+                    this.shieldActive = true;
+                    this.shieldRegenTimer = 0;
+                }
             }
         }
         

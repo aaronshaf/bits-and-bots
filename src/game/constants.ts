@@ -19,7 +19,7 @@ export const SIZES = {
 
 export const SPEEDS = {
     bot: 200, // pixels per second
-    bug: 100,
+    bug: 120, // Moderate speed for balanced gameplay
     projectile: 600, // Increased for more responsive shooting
 } as const;
 
