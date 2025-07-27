@@ -17,6 +17,8 @@ export class Bot extends Entity {
     private shieldTimer: number = 0;
     private invulnerableTimer: number = 0;
     private invulnerableDuration: number = 2000; // 2 seconds after respawn
+    private powerUps: Set<string> = new Set();
+    private lifeProgress: number = 0; // Progress towards next life
 
     constructor(x: number, y: number, playerIndex: number) {
         const color = playerIndex === 0 ? COLORS.player1 : COLORS.player2;
@@ -98,53 +100,82 @@ export class Bot extends Entity {
             ctx.restore();
         }
         
-        // Draw cute bot body
+        // Draw Matrix-style bot
         ctx.save();
         ctx.translate(this.x, this.y);
         
-        // Body
+        // Digital glow effect
+        ctx.shadowColor = this.color;
+        ctx.shadowBlur = 20;
+        
+        // Body - hexagonal core
+        ctx.fillStyle = this.color + '22';
+        ctx.strokeStyle = this.color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+            const angle = (Math.PI / 3) * i;
+            const x = Math.cos(angle) * this.radius;
+            const y = Math.sin(angle) * this.radius;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        
+        // Inner circuit patterns
+        ctx.strokeStyle = this.color + '66';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 6; i++) {
+            const angle = (Math.PI / 3) * i;
+            const x = Math.cos(angle) * this.radius * 0.7;
+            const y = Math.sin(angle) * this.radius * 0.7;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+        }
+        
+        // Digital eyes - glowing green/blue
         ctx.fillStyle = this.color;
-        ctx.beginPath();
-        ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // Inner glow
-        ctx.fillStyle = this.color + '44';
-        ctx.beginPath();
-        ctx.arc(0, 0, this.radius * 1.2, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // Eyes
-        ctx.fillStyle = '#000';
-        const eyeSize = this.radius * 0.2;
-        const eyeSpacing = this.radius * 0.5;
+        ctx.shadowColor = this.color;
+        ctx.shadowBlur = 10;
+        const eyeWidth = this.radius * 0.6;
+        const eyeHeight = this.radius * 0.15;
         const eyeY = -this.radius * 0.2;
         
         // Left eye
-        ctx.beginPath();
-        ctx.arc(-eyeSpacing, eyeY, eyeSize, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.fillRect(-eyeWidth/2 - 2, eyeY - eyeHeight/2, eyeWidth * 0.4, eyeHeight);
         
         // Right eye
-        ctx.beginPath();
-        ctx.arc(eyeSpacing, eyeY, eyeSize, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.fillRect(2, eyeY - eyeHeight/2, eyeWidth * 0.4, eyeHeight);
         
-        // Eye shine
-        ctx.fillStyle = '#fff';
-        ctx.beginPath();
-        ctx.arc(-eyeSpacing + eyeSize/2, eyeY - eyeSize/2, eyeSize/3, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(eyeSpacing + eyeSize/2, eyeY - eyeSize/2, eyeSize/3, 0, Math.PI * 2);
-        ctx.fill();
+        // Data stream effect in eyes
+        ctx.fillStyle = this.color + '44';
+        const time = Date.now() / 100;
+        for (let i = 0; i < 3; i++) {
+            const streamY = (eyeY - eyeHeight/2) + (time + i * 3) % eyeHeight;
+            ctx.fillRect(-eyeWidth/2 - 2, streamY, eyeWidth * 0.4, 1);
+            ctx.fillRect(2, streamY, eyeWidth * 0.4, 1);
+        }
         
-        // Cute smile
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 2;
+        // Central processor core
+        ctx.fillStyle = this.color;
+        ctx.strokeStyle = this.color + '88';
+        ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.arc(0, this.radius * 0.1, this.radius * 0.4, 0.2 * Math.PI, 0.8 * Math.PI);
+        ctx.arc(0, 0, this.radius * 0.3, 0, Math.PI * 2);
+        ctx.fill();
         ctx.stroke();
+        
+        // Matrix code effect
+        ctx.font = 'bold 6px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = this.color + '66';
+        const code = Math.random() > 0.5 ? '1' : '0';
+        ctx.fillText(code, 0, 0);
         
         // Aiming indicator
         if (this.lastDirection.x !== 0 || this.lastDirection.y !== 0) {
@@ -204,5 +235,39 @@ export class Bot extends Entity {
 
     public getPlayerIndex(): number {
         return this.playerIndex;
+    }
+
+    public heal(amount: number): void {
+        this.health = Math.min(this.maxHealth, this.health + amount);
+    }
+
+    public addLifeProgress(progress: number): void {
+        this.lifeProgress += progress;
+        if (this.lifeProgress >= 1) {
+            this.lives++;
+            this.lifeProgress -= 1;
+        }
+    }
+
+    public hasPowerUp(powerUp: string): boolean {
+        return this.powerUps.has(powerUp);
+    }
+
+    public addPowerUp(powerUp: string): void {
+        this.powerUps.add(powerUp);
+        
+        // Apply power-up effects
+        switch (powerUp) {
+            case 'rapidFire':
+                this.shotCooldown = 50; // Halve cooldown
+                break;
+            case 'speedBoost':
+                // Speed boost handled in update method
+                break;
+        }
+    }
+
+    public getPowerUps(): Set<string> {
+        return this.powerUps;
     }
 }

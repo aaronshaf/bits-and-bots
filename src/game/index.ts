@@ -233,8 +233,45 @@ export class Game {
         // Check collisions
         this.checkCollisions();
 
+        // Update particles
+        this.particles = this.particles.filter(particle => {
+            particle.x += particle.vx * (deltaTime / 1000);
+            particle.y += particle.vy * (deltaTime / 1000);
+            particle.life -= deltaTime;
+            particle.vx *= 0.98; // Friction
+            particle.vy *= 0.98;
+            return particle.life > 0;
+        });
+
         // Update scores in UI
         this.updateScoreDisplay();
+    }
+    
+    private checkPowerUpUnlock(bot: Bot): void {
+        const score = bot.score;
+        
+        // Power-up thresholds
+        if (score >= 50 && !bot.hasPowerUp('rapidFire')) {
+            bot.addPowerUp('rapidFire');
+            this.createPowerUpEffect(bot.x, bot.y, 'Rapid Fire!');
+        }
+        if (score >= 100 && !bot.hasPowerUp('tripleBurst')) {
+            bot.addPowerUp('tripleBurst');
+            this.createPowerUpEffect(bot.x, bot.y, 'Triple Burst!');
+        }
+        if (score >= 200 && !bot.hasPowerUp('piercing')) {
+            bot.addPowerUp('piercing');
+            this.createPowerUpEffect(bot.x, bot.y, 'Piercing Shots!');
+        }
+        if (score >= 300 && !bot.hasPowerUp('speedBoost')) {
+            bot.addPowerUp('speedBoost');
+            this.createPowerUpEffect(bot.x, bot.y, 'Speed Boost!');
+        }
+    }
+    
+    private createPowerUpEffect(x: number, y: number, text: string): void {
+        // Add to UI notifications (implement later)
+        console.log(`Power-up unlocked: ${text}`);
     }
 
     private spawnCollectible(): void {
@@ -287,6 +324,13 @@ export class Game {
             this.bits = this.bits.filter(bit => {
                 if (bot.collidesWith(bit)) {
                     bot.addScore(bit.getValue());
+                    
+                    // Replenish health slightly
+                    bot.heal(2);
+                    
+                    // Check for power-up thresholds
+                    this.checkPowerUpUnlock(bot);
+                    
                     this.audioManager.playCollectSound(false);
                     return false; // Remove collected bit
                 }
@@ -296,6 +340,11 @@ export class Game {
             this.bytes = this.bytes.filter(byte => {
                 if (bot.collidesWith(byte)) {
                     bot.addScore(byte.getValue());
+                    
+                    // Replenish health significantly and gradually restore a life
+                    bot.heal(20);
+                    bot.addLifeProgress(0.25); // 4 bytes = 1 life
+                    
                     this.audioManager.playCollectSound(true);
                     return false; // Remove collected byte
                 }
@@ -311,6 +360,7 @@ export class Game {
                         this.handleBotDeath(bot);
                     } else if (!bot.hasShield()) {
                         this.audioManager.playHitSound();
+                        this.createPlayerHitEffect(bot.x, bot.y);
                         // Push bot away from bug
                         const dx = bot.x - bug.x;
                         const dy = bot.y - bug.y;
@@ -326,19 +376,34 @@ export class Game {
         });
 
         // Check projectile-bug collisions
-        this.projectiles.forEach(projectile => {
+        this.projectiles = this.projectiles.filter(projectile => {
+            let projectileHit = false;
+            
             this.bugs = this.bugs.filter(bug => {
-                if (projectile.collidesWith(bug)) {
-                    // Award points to the bot that shot the projectile
-                    const shooter = this.bots[projectile.ownerId];
-                    if (shooter) {
-                        shooter.addScore(3); // 3 points for destroying a bug
+                if (!projectileHit && projectile.collidesWith(bug)) {
+                    projectileHit = true; // Mark projectile as used
+                    
+                    if (bug.takeDamage()) {
+                        // Bug died
+                        const shooter = this.bots[projectile.ownerId];
+                        if (shooter) {
+                            // More points for bigger bugs
+                            const points = 3 + bug.getGrowthLevel() * 2;
+                            shooter.addScore(points);
+                        }
+                        this.audioManager.playBugDestroySound();
+                        this.createBugDeathEffect(bug.x, bug.y, bug.getGrowthLevel());
+                        return false; // Remove bug
+                    } else {
+                        // Bug survived - play hit sound
+                        this.audioManager.playHitSound();
+                        return true; // Keep bug
                     }
-                    this.audioManager.playBugDestroySound();
-                    return false; // Remove bug
                 }
                 return true;
             });
+            
+            return !projectileHit; // Remove projectile if it hit
         });
         
         // Let bugs collect bits and bytes
@@ -387,6 +452,43 @@ export class Game {
             menuEl.classList.remove('hidden');
         }
     }
+    
+    private createBugDeathEffect(x: number, y: number, growthLevel: number): void {
+        // Create explosion particles based on bug size
+        const particleCount = 10 + growthLevel * 5;
+        for (let i = 0; i < particleCount; i++) {
+            this.particles.push({
+                x: x,
+                y: y,
+                vx: (Math.random() - 0.5) * 200 * (1 + growthLevel * 0.3),
+                vy: (Math.random() - 0.5) * 200 * (1 + growthLevel * 0.3),
+                life: 1000,
+                color: COLORS.bug,
+                size: 3 + growthLevel
+            });
+        }
+    }
+    
+    private createPlayerHitEffect(x: number, y: number): void {
+        // Create impact effect
+        for (let i = 0; i < 20; i++) {
+            const angle = (Math.PI * 2 / 20) * i;
+            this.particles.push({
+                x: x,
+                y: y,
+                vx: Math.cos(angle) * 150,
+                vy: Math.sin(angle) * 150,
+                life: 500,
+                color: '#ffffff',
+                size: 4
+            });
+        }
+    }
+    
+    private particles: Array<{
+        x: number, y: number, vx: number, vy: number,
+        life: number, color: string, size: number
+    }> = [];
 
     private updateScoreDisplay(): void {
         // Update player 1
@@ -439,6 +541,17 @@ export class Game {
         
         // Draw projectiles
         this.projectiles.forEach(projectile => projectile.render(this.ctx));
+        
+        // Draw particles
+        this.particles.forEach(particle => {
+            this.ctx.save();
+            this.ctx.globalAlpha = particle.life / 1000;
+            this.ctx.fillStyle = particle.color;
+            this.ctx.beginPath();
+            this.ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+            this.ctx.fill();
+            this.ctx.restore();
+        });
         
         // Draw bots
         this.bots.forEach(bot => bot.render(this.ctx));

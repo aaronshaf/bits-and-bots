@@ -10,10 +10,16 @@ export class Bug extends Entity {
     private growthLevel: number = 0;
     private baseRadius: number;
     private targetEntity: Entity | null = null;
+    private currentRadius: number;
+    private targetRadius: number;
+    private health: number = 1;
+    private maxHealth: number = 1;
     
     constructor(x: number, y: number) {
         super(x, y, SIZES.bug, COLORS.bug);
         this.baseRadius = SIZES.bug;
+        this.currentRadius = SIZES.bug;
+        this.targetRadius = SIZES.bug;
         this.setRandomVelocity();
     }
     
@@ -74,16 +80,35 @@ export class Bug extends Entity {
         const speed = SPEEDS.bug * (deltaTime / 1000);
         this.x += this.vx * speed;
         this.y += this.vy * speed;
+        
+        // Smooth radius animation
+        if (Math.abs(this.currentRadius - this.targetRadius) > 0.1) {
+            this.currentRadius += (this.targetRadius - this.currentRadius) * 0.1;
+            this.radius = this.currentRadius;
+        }
     }
 
     public collect(): void {
         this.collectedCount++;
         
-        // Grow every 3 collections
-        if (this.collectedCount % 3 === 0) {
+        // Grow every 5 collections (slower growth)
+        if (this.collectedCount % 5 === 0 && this.growthLevel < 5) { // Cap at level 5
             this.growthLevel++;
-            this.radius = this.baseRadius * (1 + this.growthLevel * 0.2);
+            this.targetRadius = this.baseRadius * (1 + this.growthLevel * 0.15); // Smaller growth increments
+            this.health = this.growthLevel + 1; // Health increases with size
+            this.maxHealth = this.health;
         }
+    }
+    
+    public takeDamage(): boolean {
+        this.health--;
+        if (this.health <= 0) {
+            return true; // Bug is dead
+        }
+        
+        // Visual feedback - temporarily shrink
+        this.currentRadius *= 0.9;
+        return false;
     }
 
     public getGrowthLevel(): number {
