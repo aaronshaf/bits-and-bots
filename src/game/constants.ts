@@ -6,6 +6,7 @@ export const COLORS = {
     bit: '#00ff00',  // Matrix green
     byte: '#00ff00', // Matrix green
     bug: '#ff4757',
+    worm: '#d2691e', // Sandy brown
     powerUp: '#a29bfe',
 } as const;
 
@@ -14,12 +15,14 @@ export const SIZES = {
     bit: 3,
     byte: 12,
     bug: 12,
+    worm: 10,
     powerUp: 16,
 } as const;
 
 export const SPEEDS = {
     bot: 200, // pixels per second
     bug: 120, // Moderate speed for balanced gameplay
+    worm: 80, // Slower, more strategic movement
     projectile: 600, // Increased for more responsive shooting
 } as const;
 

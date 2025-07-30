@@ -2,6 +2,7 @@ import { Bot } from '../Bot';
 import { Bit } from '../Bit';
 import { Byte } from '../Byte';
 import { Bug } from '../Bug';
+import { Worm } from '../Worm';
 import { Projectile } from '../Projectile';
 import { Boss } from '../Boss';
 import { Level } from '../Level';
@@ -23,6 +24,7 @@ export class CollisionSystem {
         bits: Bit[],
         bytes: Byte[],
         bugs: Bug[],
+        worms: Worm[],
         projectiles: Projectile[],
         boss: Boss | null,
         currentLevel: Level,
@@ -70,6 +72,28 @@ export class CollisionSystem {
                         if (distance > 0) {
                             bot.x += (dx / distance) * 30;
                             bot.y += (dy / distance) * 30;
+                            bot.keepInBounds(canvasWidth, canvasHeight);
+                        }
+                    }
+                }
+            });
+            
+            // Bot-worm collisions
+            worms.forEach(worm => {
+                if (bot.collidesWith(worm)) {
+                    const damage = worm.getDamage();
+                    if (bot.takeDamage(damage)) {
+                        this.onBotDeath(bot);
+                    } else if (!bot.hasShield()) {
+                        this.audioManager.playHitSound();
+                        this.particleSystem.createPlayerHitEffect(bot.x, bot.y);
+                        // Push bot away with stronger force
+                        const dx = bot.x - worm.x;
+                        const dy = bot.y - worm.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        if (distance > 0) {
+                            bot.x += (dx / distance) * 40;
+                            bot.y += (dy / distance) * 40;
                             bot.keepInBounds(canvasWidth, canvasHeight);
                         }
                     }
@@ -129,6 +153,38 @@ export class CollisionSystem {
             }
         }
         
+        // Check projectile-worm collisions
+        for (let i = projectiles.length - 1; i >= 0; i--) {
+            const projectile = projectiles[i];
+            let projectileHit = false;
+            
+            for (let j = worms.length - 1; j >= 0; j--) {
+                const worm = worms[j];
+                if (projectile.collidesWith(worm)) {
+                    projectileHit = true;
+                    
+                    if (worm.takeDamage()) {
+                        // Worm died
+                        const shooter = bots[projectile.ownerId];
+                        if (shooter) {
+                            const points = 5 + worm.getGrowthLevel() * 3;
+                            shooter.addScore(points);
+                        }
+                        this.audioManager.playBugDestroySound();
+                        this.particleSystem.createBugDeathEffect(worm.x, worm.y, worm.getGrowthLevel(), COLORS.worm);
+                        worms.splice(j, 1);
+                    } else {
+                        this.audioManager.playHitSound();
+                    }
+                    break;
+                }
+            }
+            
+            if (projectileHit) {
+                projectiles.splice(i, 1);
+            }
+        }
+        
         // Check projectile-boss collisions
         if (boss) {
             for (let i = projectiles.length - 1; i >= 0; i--) {
@@ -156,6 +212,23 @@ export class CollisionSystem {
             for (let i = bytes.length - 1; i >= 0; i--) {
                 if (bug.collidesWith(bytes[i])) {
                     bug.collect();
+                    bytes.splice(i, 1);
+                }
+            }
+        });
+        
+        // Let worms collect bits and bytes
+        worms.forEach(worm => {
+            for (let i = bits.length - 1; i >= 0; i--) {
+                if (worm.collidesWith(bits[i])) {
+                    worm.collect();
+                    bits.splice(i, 1);
+                }
+            }
+            
+            for (let i = bytes.length - 1; i >= 0; i--) {
+                if (worm.collidesWith(bytes[i])) {
+                    worm.collect();
                     bytes.splice(i, 1);
                 }
             }

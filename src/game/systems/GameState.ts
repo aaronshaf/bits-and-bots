@@ -1,5 +1,5 @@
 import { Level } from '../Level';
-import { Bot, Bug, Bit, Byte, Projectile, Boss } from '../entities';
+import { Bot, Bug, Bit, Byte, Projectile, Boss, Worm } from '../entities';
 
 export type GameMode = 'menu' | 'playing' | 'gameOver';
 
@@ -12,6 +12,7 @@ export class GameState {
     public bits: Bit[] = [];
     public bytes: Byte[] = [];
     public bugs: Bug[] = [];
+    public worms: Worm[] = [];
     public projectiles: Projectile[] = [];
     public boss: Boss | null = null;
     
@@ -40,6 +41,7 @@ export class GameState {
         this.bits = [];
         this.bytes = [];
         this.bugs = [];
+        this.worms = [];
         this.projectiles = [];
         this.boss = null;
         this.particles = [];
@@ -52,6 +54,7 @@ export class GameState {
         this.currentLevel = new Level(levelNumber);
         this.boss = null;
         this.bugs = [];
+        this.worms = [];
         this.bits = [];
         this.bytes = [];
         

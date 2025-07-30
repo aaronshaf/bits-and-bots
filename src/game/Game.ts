@@ -2,6 +2,7 @@ import { Bot } from './Bot';
 import { Bit } from './Bit';
 import { Byte } from './Byte';
 import { Bug } from './Bug';
+import { Worm } from './Worm';
 import { Projectile } from './Projectile';
 import { GamepadManager } from './GamepadManager';
 import { AudioManager } from './AudioManager';
@@ -23,6 +24,7 @@ export class Game {
     private bits: Bit[] = [];
     private bytes: Byte[] = [];
     private bugs: Bug[] = [];
+    private worms: Worm[] = [];
     private projectiles: Projectile[] = [];
     private gamepadManager: GamepadManager;
     private audioManager: AudioManager;
@@ -189,6 +191,7 @@ export class Game {
         this.currentLevel = new Level(this.levelNumber);
         this.boss = null;
         this.bugs = [];
+        this.worms = [];
         this.bits = [];
         this.bytes = [];
         this.projectiles = [];
@@ -258,6 +261,12 @@ export class Game {
             bug.bounceOffWalls(this.canvas.width, this.canvas.height);
         });
         
+        this.worms.forEach(worm => {
+            worm.setTarget(this.bits, this.bytes, this.bots);
+            worm.update(deltaTime);
+            worm.bounceOffWalls(this.canvas.width, this.canvas.height);
+        });
+        
         this.projectiles = this.projectiles.filter(projectile => {
             projectile.update(deltaTime);
             return !projectile.isExpired() && 
@@ -280,9 +289,13 @@ export class Game {
             this.bugs.push(this.entitySpawner.spawnBug(this.canvas.width, this.canvas.height));
         }
         
+        if (this.entitySpawner.shouldSpawnWorm()) {
+            this.worms.push(this.entitySpawner.spawnWorm(this.canvas.width, this.canvas.height));
+        }
+        
         // Check collisions
         this.collisionSystem.checkCollisions(
-            this.bots, this.bits, this.bytes, this.bugs,
+            this.bots, this.bits, this.bytes, this.bugs, this.worms,
             this.projectiles, this.boss, this.currentLevel,
             this.canvas.width, this.canvas.height
         );
@@ -298,6 +311,7 @@ export class Game {
             this.boss = this.entitySpawner.spawnBoss(this.currentLevel, this.levelNumber, this.canvas.width, this.canvas.height);
             this.currentLevel.markBossSpawned();
             this.bugs = []; // Clear regular bugs when boss appears
+            this.worms = []; // Clear worms when boss appears
         }
         
         // Update boss
@@ -393,6 +407,7 @@ export class Game {
         this.currentLevel = new Level(this.levelNumber);
         this.boss = null;
         this.bugs = [];
+        this.worms = [];
         this.bits = [];
         this.bytes = [];
         
@@ -422,6 +437,7 @@ export class Game {
         this.bits.forEach(bit => bit.render(this.ctx));
         this.bytes.forEach(byte => byte.render(this.ctx));
         this.bugs.forEach(bug => bug.render(this.ctx));
+        this.worms.forEach(worm => worm.render(this.ctx));
         
         if (this.boss) {
             this.boss.render(this.ctx);

@@ -218,10 +218,22 @@ export class Bot extends Entity {
     }
 
     public takeDamage(damage: number): boolean {
-        if (this.invulnerableTimer > 0 || this.shieldActive) {
-            return false; // No damage taken
+        if (this.invulnerableTimer > 0) {
+            return false; // No damage taken during invulnerability
         }
         
+        // Damage shield first if active
+        if (this.shieldActive && this.shieldStrength > 0) {
+            this.shieldStrength -= damage;
+            if (this.shieldStrength <= 0) {
+                this.shieldActive = false;
+                this.shieldStrength = 0;
+                this.shieldRegenTimer = 0; // Start regen timer
+            }
+            return false; // Shield absorbed the damage
+        }
+        
+        // Otherwise damage health
         this.health -= damage;
         if (this.health <= 0) {
             this.health = 0;

@@ -2,6 +2,7 @@
 export { Entity } from '../Entity';
 export { Bot } from '../Bot';
 export { Bug } from '../Bug';
+export { Worm } from '../Worm';
 export { Bit } from '../Bit';
 export { Byte } from '../Byte';
 export { Projectile } from '../Projectile';

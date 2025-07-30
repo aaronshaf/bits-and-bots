@@ -1,6 +1,7 @@
 import { Bit } from './Bit';
 import { Byte } from './Byte';
 import { Bug } from './Bug';
+import { Worm } from './Worm';
 import { Boss, SwarmBoss } from './Boss';
 import { Level } from './Level';
 
@@ -9,10 +10,13 @@ export class EntitySpawner {
     private spawnInterval: number = 300; // Spawn more frequently for Matrix effect
     private bugSpawnTimer: number = 0;
     private bugSpawnInterval: number = 3000; // Spawn bug every 3 seconds
+    private wormSpawnTimer: number = 0;
+    private wormSpawnInterval: number = 4500; // Spawn worm every 4.5 seconds
     
     public update(deltaTime: number): void {
         this.spawnTimer += deltaTime;
         this.bugSpawnTimer += deltaTime;
+        this.wormSpawnTimer += deltaTime;
     }
     
     public shouldSpawnCollectible(): boolean {
@@ -26,6 +30,14 @@ export class EntitySpawner {
     public shouldSpawnBug(): boolean {
         if (this.bugSpawnTimer >= this.bugSpawnInterval) {
             this.bugSpawnTimer = 0;
+            return true;
+        }
+        return false;
+    }
+    
+    public shouldSpawnWorm(): boolean {
+        if (this.wormSpawnTimer >= this.wormSpawnInterval) {
+            this.wormSpawnTimer = 0;
             return true;
         }
         return false;
@@ -75,6 +87,36 @@ export class EntitySpawner {
         return new Bug(x, y);
     }
     
+    public spawnWorm(canvasWidth: number, canvasHeight: number): Worm {
+        const margin = 80; // Larger margin for worms
+        const edge = Math.floor(Math.random() * 4);
+        let x, y;
+        
+        switch (edge) {
+            case 0: // Top
+                x = margin + Math.random() * (canvasWidth - margin * 2);
+                y = margin;
+                break;
+            case 1: // Right
+                x = canvasWidth - margin;
+                y = margin + Math.random() * (canvasHeight - margin * 2);
+                break;
+            case 2: // Bottom
+                x = margin + Math.random() * (canvasWidth - margin * 2);
+                y = canvasHeight - margin;
+                break;
+            case 3: // Left
+                x = margin;
+                y = margin + Math.random() * (canvasHeight - margin * 2);
+                break;
+            default:
+                x = canvasWidth / 2;
+                y = canvasHeight / 2;
+        }
+        
+        return new Worm(x, y);
+    }
+    
     public spawnBoss(level: Level, levelNumber: number, canvasWidth: number, canvasHeight: number): Boss {
         const config = level.getConfig();
         const centerX = canvasWidth / 2;
@@ -105,10 +147,14 @@ export class EntitySpawner {
     
     public updateSpawnRates(config: any): void {
         this.bugSpawnInterval = config.bugSpawnInterval;
+        if (config.wormSpawnInterval) {
+            this.wormSpawnInterval = config.wormSpawnInterval;
+        }
     }
     
     public resetTimers(): void {
         this.spawnTimer = 0;
         this.bugSpawnTimer = 0;
+        this.wormSpawnTimer = 0;
     }
 }
